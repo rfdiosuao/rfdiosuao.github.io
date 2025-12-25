@@ -6,6 +6,8 @@
     <title>我的个人网站</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="music-player">
@@ -18,107 +20,205 @@
             <i class="fas fa-music"></i>
         </button>
     </div>
-    <div class="container">
-        <div class="profile">
-            <div class="avatar">
-                <img src="images/avatar.jpg" alt="我的头像">
-            </div>
-            <div class="bio">
-                <h2>宇航</h2>
-                <p>这里是宇航欢迎来到我的网站。</p>
-            </div>
-        </div>
-        
-        <div class="tags-section">
-            <h3>个性标签</h3>
-            <div class="tags">
-                <div class="tag-container">
-                    <div class="tag">兴趣爱好</div>
-                    <div class="tag-popup">
-                        <ul>
-                            <li>AI</li>
-                            <li>MC</li>
-                            <li>AGI</li>
-                            <li>游戏</li>
-                            <li>文学</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="tag-container">
-                    <div class="tag">专业技能</div>
-                    <div class="tag-popup">
-                        <ul>
-                            <li>PS</li>
-                            <li>Pr</li>
-                            <li>AE</li>
-                            <li>Blender</li>
-                            <li>3ds Max</li>
-                            <li>电脑维修技术</li>
-                            <li>AI工作流</li>
-                            <li>Stable Diffusion</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="tag-container">
-                    <div class="tag">性格特点</div>
-                    <div class="tag-popup">
-                        <ul>
-                            <li>IP人</li>
-                            <li>有时内向</li>
-                            <li>有时外向</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="tag-container">
-                    <div class="tag">个人经历</div>
-                    <div class="tag-popup">
-                        <ul>
-                            <li>玩过原神</li>
-                            <li>崩坏：星穹铁道</li>
-                            <li>绝区零</li>
-                            <li>Minecraft</li>
-                            <li>双子</li>
-                            <li>Phigros</li>
-                            <li>冰与火之歌</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="tag-container">
-                    <div class="tag">未来规划</div>
-                    <div class="tag-popup">
-                        <ul>
-                            <li>成为AI全栈工程师</li>
-                            <li>实现创业梦想</li>
-                            <li>成为自媒体博主</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="content-section">
-            <div class="content-block">
-                <h3>关于我</h3>
-                <p>我是一名MC爱好者，喜欢玩各种游戏，喜欢研究游戏，喜欢分享游戏，喜欢玩游戏。欢迎加入我的QQ粉丝聊天群一起玩：750463917</p>
-            </div>
-            
-            <div class="content-block">
-                <h3>下载链接</h3>
-                <ul class="download-links">
-                    <li>
-                        <a href="https://wwyu.lanzoue.com/ib8ic2puytij" target="_blank">PCL2启动器</a>
-                        <span class="link-description">这是PCL2的下载链接密码:ep1w</span>
-                    </li>
-                    <li>
-                        <a href="https://wwyu.lanzoue.com/iNUMW2m1mdbc" target="_blank">奥特曼整合包</a>
-                        <span class="link-description">这是一款融入了奥特曼模组的MC整合包</span>
-                    </li>
-                    <li>
-                        <a href="https://wwyu.lanzoue.com/i79T92puzyfc" target="_blank">生电整合包</a>
-                        <span class="link-description">这是MC生电整合包</span>
-                    </li>
+    <div class="main-wrapper">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active" data-target="home"><i class="fas fa-home"></i> 首页</li>
+                    <li data-target="articles"><i class="fas fa-book"></i> 文章发布</li>
+                    <li data-target="resources"><i class="fas fa-folder-open"></i> 资源中心</li>
+                    <li data-target="admin" id="adminBtn" style="display: none;"><i class="fas fa-user-shield"></i> 管理后台</li>
                 </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <p>&copy; 2025 宇航</p>
             </div>
+        </aside>
+
+        <div class="container">
+            <!-- 首页内容 -->
+            <section id="home-section" class="page-section active">
+                <div class="profile">
+                    <div class="avatar">
+                        <img src="images/avatar.jpg" alt="我的头像">
+                    </div>
+                    <div class="bio">
+                        <h2>宇航</h2>
+                        <p>这里是宇航欢迎来到我的网站。</p>
+                    </div>
+                </div>
+                
+                <div class="tags-section">
+                    <h3>个性标签</h3>
+                    <div class="tags">
+                        <div class="tag-container">
+                            <div class="tag">兴趣爱好</div>
+                            <div class="tag-popup">
+                                <ul>
+                                    <li>AI</li>
+                                    <li>MC</li>
+                                    <li>AGI</li>
+                                    <li>游戏</li>
+                                    <li>文学</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="tag-container">
+                            <div class="tag">专业技能</div>
+                            <div class="tag-popup">
+                                <ul>
+                                    <li>PS</li>
+                                    <li>Pr</li>
+                                    <li>AE</li>
+                                    <li>Blender</li>
+                                    <li>3ds Max</li>
+                                    <li>电脑维修技术</li>
+                                    <li>AI工作流</li>
+                                    <li>Stable Diffusion</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="tag-container">
+                            <div class="tag">性格特点</div>
+                            <div class="tag-popup">
+                                <ul>
+                                    <li>IP人</li>
+                                    <li>有时内向</li>
+                                    <li>有时外向</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="tag-container">
+                            <div class="tag">个人经历</div>
+                            <div class="tag-popup">
+                                <ul>
+                                    <li>玩过原神</li>
+                                    <li>崩坏：星穹铁道</li>
+                                    <li>绝区零</li>
+                                    <li>Minecraft</li>
+                                    <li>双子</li>
+                                    <li>Phigros</li>
+                                    <li>冰与火之歌</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="tag-container">
+                            <div class="tag">未来规划</div>
+                            <div class="tag-popup">
+                                <ul>
+                                    <li>成为AI全栈工程师</li>
+                                    <li>实现创业梦想</li>
+                                    <li>成为自媒体博主</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="content-block">
+                        <h3>关于我</h3>
+                        <p>我是一名MC爱好者，喜欢玩各种游戏，喜欢研究游戏，喜欢分享游戏，喜欢玩游戏。欢迎加入我的QQ粉丝聊天群一起玩：750463917</p>
+                    </div>
+                    
+                    <div class="content-block">
+                        <h3>下载链接</h3>
+                        <ul class="download-links">
+                            <li>
+                                <a href="https://wwyu.lanzoue.com/ib8ic2puytij" target="_blank">PCL2启动器</a>
+                                <span class="link-description">这是PCL2的下载链接密码:ep1w</span>
+                            </li>
+                            <li>
+                                <a href="https://wwyu.lanzoue.com/iNUMW2m1mdbc" target="_blank">奥特曼整合包</a>
+                                <span class="link-description">这是一款融入了奥特曼模组的MC整合包</span>
+                            </li>
+                            <li>
+                                <a href="https://wwyu.lanzoue.com/i79T92puzyfc" target="_blank">生电整合包</a>
+                                <span class="link-description">这是MC生电整合包</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 文章列表界面 -->
+            <section id="articles-section" class="page-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-book"></i> 文章发布</h3>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="article-search" placeholder="搜索文章...">
+                    </div>
+                </div>
+                <div id="articles-list" class="content-section">
+                    <!-- 文章内容将由 JS 动态加载 -->
+                </div>
+            </section>
+
+            <!-- 资源中心界面 -->
+            <section id="resources-section" class="page-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-folder-open"></i> 资源中心</h3>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="resource-search" placeholder="搜索资源...">
+                    </div>
+                </div>
+                <div id="resources-list" class="content-section">
+                    <!-- 资源内容将由 JS 动态加载 -->
+                </div>
+            </section>
+
+            <!-- 管理员后台界面 -->
+            <section id="admin-section" class="page-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-user-shield"></i> 管理员后台</h3>
+                </div>
+                
+                <div id="admin-login" class="content-block">
+                    <h4>管理员登录</h4>
+                    <div class="form-group">
+                        <input type="password" id="admin-password" placeholder="请输入管理密码">
+                        <button id="login-btn">登录</button>
+                    </div>
+                </div>
+
+                <div id="admin-dashboard" class="content-block" style="display: none;">
+                    <div class="admin-tabs">
+                        <button class="tab-btn active" data-tab="publish-article">发布文章</button>
+                        <button class="tab-btn" data-tab="upload-resource">上传资源</button>
+                        <button class="tab-btn" data-tab="db-settings">数据库设置</button>
+                    </div>
+
+                    <div id="publish-article" class="tab-content active">
+                        <div class="form-group">
+                            <input type="text" id="article-title" placeholder="文章标题">
+                            <textarea id="article-content" placeholder="文章内容 (支持 Markdown)"></textarea>
+                            <button id="save-article-btn">发布文章</button>
+                        </div>
+                    </div>
+
+                    <div id="upload-resource" class="tab-content">
+                        <div class="form-group">
+                            <input type="text" id="resource-name" placeholder="资源名称">
+                            <input type="text" id="resource-link" placeholder="资源下载链接">
+                            <input type="text" id="resource-desc" placeholder="资源描述">
+                            <button id="save-resource-btn">上传资源</button>
+                        </div>
+                    </div>
+
+                    <div id="db-settings" class="tab-content">
+                        <div class="form-group">
+                            <h4>Supabase 配置 (实现公网同步)</h4>
+                            <p style="font-size: 0.8em; color: #aaa;">配置后，数据将存储在云端，所有人都能看到您发布的内容。</p>
+                            <input type="text" id="db-url" placeholder="Supabase Project URL">
+                            <input type="password" id="db-key" placeholder="Supabase Anon Key">
+                            <button id="save-db-config">保存配置并连接</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
     <script src="script.js"></script>
