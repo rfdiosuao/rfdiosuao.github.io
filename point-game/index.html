@@ -225,13 +225,20 @@
       padding: 24px;
       background: radial-gradient(circle at center, rgba(5, 5, 16, 0.12), rgba(5, 5, 16, 0.78));
       pointer-events: auto;
-      transition: opacity 0.35s ease, transform 0.35s ease;
+      visibility: visible;
+      transition: opacity 0.35s ease, transform 0.35s ease, visibility 0s linear 0s;
     }
 
     .overlay.is-hidden {
       opacity: 0;
       transform: scale(1.02);
       pointer-events: none;
+      visibility: hidden;
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+    }
+
+    .overlay.is-instant {
+      transition: none;
     }
 
     .overlay__panel {
@@ -545,7 +552,7 @@
         <p class="subtitle">现在它是一个真正可玩的星座连接游戏：每一关都来自真实夜空中的星座形状。控制白点，按顺序连接仙后座、北斗七星、天鹅座、猎户座和射手座，在危险点与追踪点之间把星图重新点亮。</p>
         <div class="control-grid">
           <div class="control-card"><strong>移动</strong>WASD / 方向键，手机可拖动。</div>
-          <div class="control-card"><strong>冲刺</strong>空格键，或鼠标/触摸点击。冲刺可穿过危险。</div>
+          <div class="control-card"><strong>冲刺</strong>空格键，或手机轻点屏幕。拖动只负责移动，不会误触发冲刺。</div>
           <div class="control-card"><strong>目标</strong>必须按编号连接绿色点，连错不会得分。</div>
         </div>
         <div class="quote">一个点只是位置。按真实星座的顺序连接，才会让夜空重新拥有意义。</div>
@@ -626,6 +633,7 @@
     const keys = new Set();
     const pointer = { active: false, x: 0, y: 0 };
     const touchState = { active: false, startX: 0, startY: 0, x: 0, y: 0, startTime: 0, moved: false };
+    let suppressInputUntil = 0;
 
     const levels = [
       {
@@ -787,7 +795,9 @@
     }
 
     function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
+      const low = Math.min(min, max);
+      const high = Math.max(min, max);
+      return Math.max(low, Math.min(high, value));
     }
 
     function distance(a, b) {
@@ -803,11 +813,13 @@
       const paddingX = compact ? 34 : 120;
       const top = compact ? 150 : 132;
       const bottom = compact ? 178 : 142;
+      const safeWidth = Math.max(140, window.innerWidth - paddingX * 2);
+      const safeHeight = Math.max(150, window.innerHeight - top - bottom);
       return {
-        x: paddingX,
-        y: top,
-        width: Math.max(260, window.innerWidth - paddingX * 2),
-        height: Math.max(230, window.innerHeight - top - bottom)
+        x: Math.min(paddingX, Math.max(18, window.innerWidth - safeWidth - 18)),
+        y: Math.min(top, Math.max(76, window.innerHeight - safeHeight - 78)),
+        width: safeWidth,
+        height: safeHeight
       };
     }
 
@@ -941,14 +953,24 @@
         len = 1;
       }
       const player = state.player;
-      player.x = clamp(firstStar.x + dx / len * 92, 24, window.innerWidth - 24);
-      player.y = clamp(firstStar.y + dy / len * 92, 24, window.innerHeight - 24);
+      const minX = Math.max(24, bounds.x + 12);
+      const maxX = Math.min(window.innerWidth - 24, bounds.x + bounds.width - 12);
+      const minY = Math.max(86, bounds.y + 12);
+      const maxY = Math.min(window.innerHeight - 96, bounds.y + bounds.height - 12);
+      player.x = clamp(firstStar.x + dx / len * 92, minX, maxX);
+      player.y = clamp(firstStar.y + dy / len * 92, minY, maxY);
+      if (!Number.isFinite(player.x) || !Number.isFinite(player.y)) {
+        player.x = window.innerWidth / 2;
+        player.y = window.innerHeight / 2;
+      }
       player.vx = 0;
       player.vy = 0;
       player.dashTime = 0;
       player.dashCooldown = 0;
-      player.invincibleUntil = performance.now() + 900;
+      player.invincibleUntil = performance.now() + 260;
       pointer.active = false;
+      touchState.active = false;
+      touchState.moved = false;
     }
 
     function loadLevel(index) {
@@ -1130,8 +1152,8 @@
         player.vx = inputX * player.speed;
         player.vy = inputY * player.speed;
       }
-      player.x = clamp(player.x + player.vx * delta, 18, window.innerWidth - 18);
-      player.y = clamp(player.y + player.vy * delta, 18, window.innerHeight - 18);
+      player.x = clamp(player.x + player.vx * delta, 24, window.innerWidth - 24);
+      player.y = clamp(player.y + player.vy * delta, 86, window.innerHeight - 96);
       player.dashCooldown = Math.max(0, player.dashCooldown - delta);
     }
 
@@ -1385,7 +1407,7 @@
         ctx.stroke();
         ctx.restore();
       }
-      drawGlowCircle(player.x, player.y, player.radius + Math.sin(now / 120) * 1.4, colors.player, blink);
+      drawGlowCircle(player.x, player.y, player.radius + Math.sin(now / 120) * 1.4, colors.player, Math.max(0.72, blink));
       ctx.save();
       ctx.strokeStyle = invincible ? 'rgba(241, 250, 140, 0.82)' : 'rgba(139, 233, 253, 0.42)';
       ctx.lineWidth = 2;
@@ -1459,11 +1481,34 @@
       touchState.moved = false;
     }
 
+    function isInteractiveElement(target) {
+      return Boolean(target && target.closest && target.closest('button, .overlay, .overlay__panel'));
+    }
+
+    function ignoreGameInput(event) {
+      return performance.now() < suppressInputUntil || isInteractiveElement(event.target);
+    }
+
+    function hideOverlayInstantly(overlay) {
+      overlay.classList.add('is-instant');
+      overlay.classList.add('is-hidden');
+      void overlay.offsetWidth;
+      overlay.classList.remove('is-instant');
+    }
+
+    function resetPlayerToCurrentLevel() {
+      const level = levels[state.levelIndex] || levels[0];
+      const mappedStars = mapConstellation(level);
+      placePlayerForLevel(mappedStars, level);
+    }
+
     function startGame() {
+      suppressInputUntil = performance.now() + 450;
       clearInput();
-      startOverlay.classList.add('is-hidden');
-      endOverlay.classList.add('is-hidden');
+      hideOverlayInstantly(startOverlay);
+      hideOverlayInstantly(endOverlay);
       resetGame();
+      resetPlayerToCurrentLevel();
     }
 
     function setPointer(clientX, clientY, active) {
@@ -1472,7 +1517,10 @@
       pointer.active = active;
     }
 
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => {
+      resize();
+      if (state.mode === 'playing') resetPlayerToCurrentLevel();
+    });
     window.addEventListener('blur', clearInput);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) clearInput();
@@ -1486,14 +1534,18 @@
     });
     window.addEventListener('keyup', (event) => keys.delete(event.code));
     window.addEventListener('mousedown', (event) => {
+      if (ignoreGameInput(event)) return;
       setPointer(event.clientX, event.clientY, true);
       tryDashToward(event.clientX, event.clientY);
     });
     window.addEventListener('mousemove', (event) => {
+      if (ignoreGameInput(event)) return;
       if (pointer.active) setPointer(event.clientX, event.clientY, true);
     });
     window.addEventListener('mouseup', () => setPointer(pointer.x, pointer.y, false));
     window.addEventListener('touchstart', (event) => {
+      if (ignoreGameInput(event)) return;
+      event.preventDefault();
       const touch = event.touches[0];
       if (touch) {
         touchState.active = true;
@@ -1507,6 +1559,8 @@
       }
     }, { passive: false });
     window.addEventListener('touchmove', (event) => {
+      if (ignoreGameInput(event)) return;
+      event.preventDefault();
       const touch = event.touches[0];
       if (touch) {
         const dx = touch.clientX - touchState.startX;
@@ -1517,7 +1571,9 @@
         setPointer(touch.clientX, touch.clientY, true);
       }
     }, { passive: false });
-    window.addEventListener('touchend', () => {
+    window.addEventListener('touchend', (event) => {
+      if (ignoreGameInput(event)) return;
+      event.preventDefault();
       const tapDuration = performance.now() - touchState.startTime;
       const tapDistance = Math.hypot(touchState.x - touchState.startX, touchState.y - touchState.startY);
       const isTap = touchState.active && !touchState.moved && tapDuration < 260 && tapDistance <= 16;
@@ -1525,16 +1581,30 @@
       if (isTap) tryDashToward(touchState.x, touchState.y);
       touchState.active = false;
       touchState.moved = false;
-    });
+    }, { passive: false });
 
-    startButton.addEventListener('click', startGame);
-    restartButton.addEventListener('click', startGame);
-    backButton.addEventListener('click', () => {
+    function handleMenuButton(event, action) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressInputUntil = performance.now() + 450;
+      action();
+    }
+
+    startButton.addEventListener('click', (event) => handleMenuButton(event, startGame));
+    restartButton.addEventListener('click', (event) => handleMenuButton(event, startGame));
+    [startButton, restartButton, backButton].forEach((button) => {
+      ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mouseup'].forEach((type) => {
+        button.addEventListener(type, (event) => {
+          event.stopPropagation();
+        }, { passive: false });
+      });
+    });
+    backButton.addEventListener('click', (event) => handleMenuButton(event, () => {
       clearInput();
       state.mode = 'ready';
-      endOverlay.classList.add('is-hidden');
+      hideOverlayInstantly(endOverlay);
       startOverlay.classList.remove('is-hidden');
-    });
+    }));
 
     resize();
     state.player.x = window.innerWidth / 2;
