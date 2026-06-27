@@ -625,6 +625,7 @@
 
     const keys = new Set();
     const pointer = { active: false, x: 0, y: 0 };
+    const touchState = { active: false, startX: 0, startY: 0, x: 0, y: 0, startTime: 0, moved: false };
 
     const levels = [
       {
@@ -1079,15 +1080,25 @@
       }
     }
 
-    function tryDash() {
+    function tryDash(angleOverride) {
       const player = state.player;
       if (state.mode !== 'playing' || player.dashCooldown > 0) return;
-      const angle = Math.atan2(player.vy, player.vx);
-      player.dashAngle = Math.abs(player.vx) + Math.abs(player.vy) > 0.01 ? angle : -Math.PI / 2;
+      const hasOverride = Number.isFinite(angleOverride);
+      const isMoving = Math.abs(player.vx) + Math.abs(player.vy) > 0.01;
+      const angle = hasOverride ? angleOverride : Math.atan2(player.vy, player.vx);
+      player.dashAngle = hasOverride || isMoving ? angle : -Math.PI / 2;
       player.dashTime = 0.18;
       player.dashCooldown = 2.2;
       player.invincibleUntil = performance.now() + 260;
       createBurst(player.x, player.y, colors.player, 16, 0.9);
+    }
+
+    function tryDashToward(clientX, clientY) {
+      const player = state.player;
+      const dx = clientX - player.x;
+      const dy = clientY - player.y;
+      const len = Math.hypot(dx, dy);
+      tryDash(len > 8 ? Math.atan2(dy, dx) : undefined);
     }
 
     function updatePlayer(delta) {
@@ -1444,6 +1455,8 @@
     function clearInput() {
       keys.clear();
       pointer.active = false;
+      touchState.active = false;
+      touchState.moved = false;
     }
 
     function startGame() {
@@ -1474,7 +1487,7 @@
     window.addEventListener('keyup', (event) => keys.delete(event.code));
     window.addEventListener('mousedown', (event) => {
       setPointer(event.clientX, event.clientY, true);
-      tryDash();
+      tryDashToward(event.clientX, event.clientY);
     });
     window.addEventListener('mousemove', (event) => {
       if (pointer.active) setPointer(event.clientX, event.clientY, true);
@@ -1483,15 +1496,36 @@
     window.addEventListener('touchstart', (event) => {
       const touch = event.touches[0];
       if (touch) {
+        touchState.active = true;
+        touchState.startX = touch.clientX;
+        touchState.startY = touch.clientY;
+        touchState.x = touch.clientX;
+        touchState.y = touch.clientY;
+        touchState.startTime = performance.now();
+        touchState.moved = false;
         setPointer(touch.clientX, touch.clientY, true);
-        tryDash();
       }
-    }, { passive: true });
+    }, { passive: false });
     window.addEventListener('touchmove', (event) => {
       const touch = event.touches[0];
-      if (touch) setPointer(touch.clientX, touch.clientY, true);
-    }, { passive: true });
-    window.addEventListener('touchend', () => setPointer(pointer.x, pointer.y, false));
+      if (touch) {
+        const dx = touch.clientX - touchState.startX;
+        const dy = touch.clientY - touchState.startY;
+        if (Math.hypot(dx, dy) > 16) touchState.moved = true;
+        touchState.x = touch.clientX;
+        touchState.y = touch.clientY;
+        setPointer(touch.clientX, touch.clientY, true);
+      }
+    }, { passive: false });
+    window.addEventListener('touchend', () => {
+      const tapDuration = performance.now() - touchState.startTime;
+      const tapDistance = Math.hypot(touchState.x - touchState.startX, touchState.y - touchState.startY);
+      const isTap = touchState.active && !touchState.moved && tapDuration < 260 && tapDistance <= 16;
+      setPointer(pointer.x, pointer.y, false);
+      if (isTap) tryDashToward(touchState.x, touchState.y);
+      touchState.active = false;
+      touchState.moved = false;
+    });
 
     startButton.addEventListener('click', startGame);
     restartButton.addEventListener('click', startGame);
