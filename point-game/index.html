@@ -236,11 +236,12 @@
 
     .overlay__panel {
       width: min(820px, 100%);
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
       padding: clamp(24px, 5vw, 54px);
       border-radius: 34px;
       text-align: center;
       position: relative;
-      overflow: hidden;
     }
 
     .overlay__panel::before {
@@ -1417,8 +1418,8 @@
       finalLevel.textContent = `${completedLevels}/${levels.length}`;
       finalConnected.textContent = state.connectedCount;
       bestScore.textContent = state.best;
-      endKicker.textContent = won ? 'Constellation Complete' : 'Run Ended';
-      endTitle.textContent = won ? 'Meaning' : 'Again';
+      endKicker.textContent = won ? 'Constellation Complete' : 'Run Failed';
+      endTitle.textContent = won ? 'Meaning' : 'Try Again';
       resultText.textContent = won
         ? '你点亮了仙后座、北斗七星、天鹅座、猎户座和射手座：一个点最终重新描出了真实夜空。'
         : state.connectedCount >= 12
