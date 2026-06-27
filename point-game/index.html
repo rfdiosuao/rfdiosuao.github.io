@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pointless? — Constellation Run</title>
+  <style>
+    :root {
+      --void: #050510;
+      --text: #f8fbff;
+      --muted: #95a5c8;
+      --cyan: #8be9fd;
+      --green: #50fa7b;
+      --red: #ff5555;
+      --gold: #f1fa8c;
+      --violet: #bd93f9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--void);
+      color: var(--text);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      user-select: none;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(circle at 18% 24%, rgba(80, 250, 123, 0.13), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(189, 147, 249, 0.16), transparent 30%),
+        radial-gradient(circle at 54% 78%, rgba(139, 233, 253, 0.12), transparent 26%),
+        linear-gradient(135deg, #03030b 0%, #060a1f 48%, #020208 100%);
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.38;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(circle at center, black 0%, transparent 74%);
+      z-index: 1;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+      touch-action: none;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 3;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+    }
+
+    .brand {
+      position: absolute;
+      top: 24px;
+      left: 28px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .brand__eyebrow {
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 800;
+      opacity: 0.9;
+    }
+
+    .brand__title {
+      margin-top: 4px;
+      font-size: clamp(26px, 3.6vw, 56px);
+      line-height: 0.92;
+      font-weight: 900;
+      text-shadow: 0 0 26px rgba(139, 233, 253, 0.4);
+    }
+
+    .hud {
+      position: absolute;
+      left: 28px;
+      bottom: 26px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(86px, 1fr));
+      gap: 9px;
+      max-width: min(820px, calc(100vw - 56px));
+    }
+
+    .metric,
+    .guide,
+    .overlay__panel,
+    .objective {
+      border: 1px solid rgba(139, 233, 253, 0.22);
+      background: linear-gradient(145deg, rgba(11, 18, 42, 0.76), rgba(7, 10, 24, 0.42));
+      box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .metric {
+      min-height: 70px;
+      padding: 12px 13px;
+      border-radius: 16px;
+    }
+
+    .metric__label {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .metric__value {
+      margin-top: 7px;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .objective {
+      position: absolute;
+      left: 50%;
+      top: 24px;
+      transform: translateX(-50%);
+      width: min(520px, calc(100vw - 56px));
+      padding: 14px 18px;
+      border-radius: 22px;
+      text-align: center;
+    }
+
+    .objective__label {
+      color: var(--gold);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+
+    .objective__text {
+      margin-top: 7px;
+      color: #dfe7ff;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .guide {
+      display: none;
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      width: min(330px, calc(100vw - 56px));
+      padding: 17px;
+      border-radius: 24px;
+    }
+
+    .guide h2 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .guide p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+    }
+
+    .legend__item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #cbd5f5;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 18px currentColor;
+      flex: none;
+    }
+
+    .dot--energy { color: var(--cyan); background: var(--cyan); }
+    .dot--target { color: var(--green); background: var(--green); }
+    .dot--danger { color: var(--red); background: var(--red); }
+    .dot--player { color: white; background: white; }
+    .dot--enemy { color: var(--violet); background: var(--violet); }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: radial-gradient(circle at center, rgba(5, 5, 16, 0.12), rgba(5, 5, 16, 0.78));
+      pointer-events: auto;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .overlay.is-hidden {
+      opacity: 0;
+      transform: scale(1.02);
+      pointer-events: none;
+    }
+
+    .overlay__panel {
+      width: min(820px, 100%);
+      padding: clamp(24px, 5vw, 54px);
+      border-radius: 34px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overlay__panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(115deg, transparent 0%, rgba(139, 233, 253, 0.1) 35%, transparent 54%),
+        radial-gradient(circle at 50% 0%, rgba(241, 250, 140, 0.16), transparent 42%);
+      pointer-events: none;
+    }
+
+    .overlay__content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .kicker {
+      margin: 0 0 12px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 8vw, 104px);
+      line-height: 0.9;
+      letter-spacing: -0.075em;
+      text-transform: uppercase;
+      text-shadow: 0 0 34px rgba(139, 233, 253, 0.42);
+    }
+
+    .subtitle {
+      width: min(620px, 100%);
+      margin: 22px auto 0;
+      color: #c5cff0;
+      font-size: clamp(15px, 2vw, 18px);
+      line-height: 1.8;
+    }
+
+    .quote {
+      margin: 24px auto 0;
+      padding: 16px 18px;
+      width: min(620px, 100%);
+      border: 1px solid rgba(80, 250, 123, 0.24);
+      border-radius: 20px;
+      color: var(--gold);
+      background: rgba(80, 250, 123, 0.06);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: min(680px, 100%);
+      margin: 24px auto 0;
+    }
+
+    .control-card {
+      padding: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.052);
+      color: #d9e4ff;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .control-card strong {
+      display: block;
+      color: #fff;
+      font-size: 15px;
+      margin-bottom: 5px;
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      pointer-events: auto;
+      border: 1px solid rgba(139, 233, 253, 0.42);
+      border-radius: 999px;
+      padding: 14px 24px;
+      color: var(--text);
+      background: linear-gradient(135deg, rgba(139, 233, 253, 0.18), rgba(189, 147, 249, 0.12));
+      box-shadow: 0 0 28px rgba(139, 233, 253, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(80, 250, 123, 0.72);
+      box-shadow: 0 0 36px rgba(80, 250, 123, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .ghost-button {
+      color: #c8d3f8;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 28px auto 0;
+      max-width: 660px;
+    }
+
+    .result-card {
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .result-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .result-card strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 24px;
+    }
+
+    .toast {
+      position: absolute;
+      left: 50%;
+      top: 18%;
+      transform: translate(-50%, -20px);
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(5, 5, 16, 0.72);
+      border: 1px solid rgba(241, 250, 140, 0.3);
+      color: var(--gold);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      transition: opacity 0.24s ease, transform 0.24s ease;
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .shake {
+      animation: shake 0.34s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-8px, 4px); }
+      40% { transform: translate(7px, -5px); }
+      60% { transform: translate(-5px, -3px); }
+      80% { transform: translate(4px, 6px); }
+    }
+
+    @media (max-width: 980px) {
+      .objective {
+        top: 104px;
+      }
+
+      .guide {
+        display: none;
+      }
+
+      .hud {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        max-width: none;
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .brand {
+        top: 16px;
+        left: 16px;
+      }
+
+      .objective {
+        top: 92px;
+        width: calc(100vw - 28px);
+        padding: 10px 12px;
+      }
+
+      .objective__text {
+        font-size: 13px;
+      }
+
+      .hud {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .metric {
+        min-height: auto;
+        padding: 9px 11px;
+      }
+
+      .metric__value {
+        font-size: 18px;
+      }
+
+      .control-grid,
+      .result-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <main class="shell" id="shell">
+    <section class="brand" aria-label="游戏标题">
+      <div class="brand__eyebrow">Playable Hackathon Build</div>
+      <div class="brand__title">Pointless?</div>
+    </section>
+
+    <section class="objective" aria-label="当前目标">
+      <div class="objective__label">Current Objective</div>
+      <div class="objective__text" id="objectiveText">按顺序连接真实星座的绿色星点，点亮夜空。</div>
+    </section>
+
+    <aside class="guide" aria-label="游戏说明">
+      <h2>真正玩法</h2>
+      <p>你要按顺序连接真实星座的编号星点，收集能量，躲避敌人。从仙后座的 W 形开始，一路点亮北斗、天鹅、猎户和射手。</p>
+      <div class="legend">
+        <div class="legend__item"><span class="dot dot--player"></span>白点：玩家</div>
+        <div class="legend__item"><span class="dot dot--target"></span>绿色编号点：下一个目标</div>
+        <div class="legend__item"><span class="dot dot--energy"></span>青色点：能量与分数</div>
+        <div class="legend__item"><span class="dot dot--danger"></span>红色点：危险障碍</div>
+        <div class="legend__item"><span class="dot dot--enemy"></span>紫色点：追踪敌人</div>
+      </div>
+    </aside>
+
+    <section class="hud" aria-label="游戏状态">
+      <div class="metric">
+        <div class="metric__label">Score</div>
+        <div class="metric__value" id="scoreValue">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">Lives</div>
+        <div class="metric__value" id="livesValue">●●●</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">Time</div>
+        <div class="metric__value" id="timeValue">90</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">Level</div>
+        <div class="metric__value" id="levelValue">1/3</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">Target</div>
+        <div class="metric__value" id="targetValue">1/5</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">Dash</div>
+        <div class="metric__value" id="dashValue">Ready</div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast">Constellation Complete</div>
+  </main>
+
+  <section class="overlay" id="startOverlay" aria-label="开始游戏">
+    <div class="overlay__panel">
+      <div class="overlay__content">
+        <p class="kicker">From a point to a constellation</p>
+        <h1>Pointless?</h1>
+        <p class="subtitle">现在它是一个真正可玩的星座连接游戏：每一关都来自真实夜空中的星座形状。控制白点，按顺序连接仙后座、北斗七星、天鹅座、猎户座和射手座，在危险点与追踪点之间把星图重新点亮。</p>
+        <div class="control-grid">
+          <div class="control-card"><strong>移动</strong>WASD / 方向键，手机可拖动。</div>
+          <div class="control-card"><strong>冲刺</strong>空格键，或鼠标/触摸点击。冲刺可穿过危险。</div>
+          <div class="control-card"><strong>目标</strong>必须按编号连接绿色点，连错不会得分。</div>
+        </div>
+        <div class="quote">一个点只是位置。按真实星座的顺序连接，才会让夜空重新拥有意义。</div>
+        <div class="button-row">
+          <button id="startButton">开始游戏</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="overlay is-hidden" id="endOverlay" aria-label="游戏结束">
+    <div class="overlay__panel">
+      <div class="overlay__content">
+        <p class="kicker" id="endKicker">Run Complete</p>
+        <h1 id="endTitle">Meaning</h1>
+        <p class="subtitle" id="resultText">你从一个点开始，最终留下了一片星座。</p>
+        <div class="result-grid">
+          <div class="result-card">
+            <span>Final Score</span>
+            <strong id="finalScore">0</strong>
+          </div>
+          <div class="result-card">
+            <span>Star Maps</span>
+            <strong id="finalLevel">0/5</strong>
+          </div>
+          <div class="result-card">
+            <span>Connected</span>
+            <strong id="finalConnected">0</strong>
+          </div>
+          <div class="result-card">
+            <span>Best</span>
+            <strong id="bestScore">0</strong>
+          </div>
+        </div>
+        <div class="quote">你不是为了成为最大的点，而是为了照着真实星图找到正确的连接。</div>
+        <div class="button-row">
+          <button id="restartButton">再来一次</button>
+          <button class="ghost-button" id="backButton">回到开场</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const shell = document.getElementById('shell');
+    const startOverlay = document.getElementById('startOverlay');
+    const endOverlay = document.getElementById('endOverlay');
+    const startButton = document.getElementById('startButton');
+    const restartButton = document.getElementById('restartButton');
+    const backButton = document.getElementById('backButton');
+    const scoreValue = document.getElementById('scoreValue');
+    const livesValue = document.getElementById('livesValue');
+    const timeValue = document.getElementById('timeValue');
+    const levelValue = document.getElementById('levelValue');
+    const targetValue = document.getElementById('targetValue');
+    const dashValue = document.getElementById('dashValue');
+    const objectiveText = document.getElementById('objectiveText');
+    const finalScore = document.getElementById('finalScore');
+    const finalLevel = document.getElementById('finalLevel');
+    const finalConnected = document.getElementById('finalConnected');
+    const bestScore = document.getElementById('bestScore');
+    const resultText = document.getElementById('resultText');
+    const endKicker = document.getElementById('endKicker');
+    const endTitle = document.getElementById('endTitle');
+    const toast = document.getElementById('toast');
+
+    const colors = {
+      energy: '#8be9fd',
+      target: '#50fa7b',
+      danger: '#ff5555',
+      enemy: '#bd93f9',
+      gold: '#f1fa8c',
+      player: '#ffffff'
+    };
+
+    const keys = new Set();
+    const pointer = { active: false, x: 0, y: 0 };
+
+    const levels = [
+      {
+        name: '仙后座',
+        englishName: 'Cassiopeia',
+        title: 'W Shape',
+        description: '连接经典 W 形星图，学会按顺序让点产生形状。',
+        hazards: 5,
+        enemies: 0,
+        energy: 8,
+        timeBonus: 12,
+        stars: [
+          { x: 0.16, y: 0.38, label: 'Schedar' },
+          { x: 0.31, y: 0.56, label: 'Caph' },
+          { x: 0.48, y: 0.40, label: 'Gamma Cas' },
+          { x: 0.65, y: 0.56, label: 'Ruchbah' },
+          { x: 0.84, y: 0.38, label: 'Segin' }
+        ],
+        path: [0, 1, 2, 3, 4]
+      },
+      {
+        name: '北斗七星',
+        englishName: 'Big Dipper',
+        title: 'Seven Stars',
+        description: '连接斗身与斗柄，完成最容易被认出的七星勺形。',
+        hazards: 8,
+        enemies: 1,
+        energy: 9,
+        timeBonus: 16,
+        stars: [
+          { x: 0.18, y: 0.42, label: '天枢' },
+          { x: 0.30, y: 0.30, label: '天璇' },
+          { x: 0.46, y: 0.39, label: '天玑' },
+          { x: 0.36, y: 0.56, label: '天权' },
+          { x: 0.56, y: 0.57, label: '玉衡' },
+          { x: 0.72, y: 0.48, label: '开阳' },
+          { x: 0.86, y: 0.34, label: '摇光' }
+        ],
+        path: [0, 1, 2, 3, 4, 5, 6]
+      },
+      {
+        name: '天鹅座',
+        englishName: 'Cygnus',
+        title: 'Northern Cross',
+        description: '从尾羽到长颈，再展开双翼，完成北十字。',
+        hazards: 10,
+        enemies: 1,
+        energy: 8,
+        timeBonus: 18,
+        stars: [
+          { x: 0.50, y: 0.18, label: 'Deneb' },
+          { x: 0.50, y: 0.42, label: 'Sadr' },
+          { x: 0.50, y: 0.78, label: 'Albireo' },
+          { x: 0.22, y: 0.46, label: 'Gienah' },
+          { x: 0.78, y: 0.38, label: 'Delta Cygni' }
+        ],
+        path: [0, 1, 2, 1, 3, 1, 4]
+      },
+      {
+        name: '猎户座',
+        englishName: 'Orion',
+        title: 'Hunter',
+        description: '连接肩、腰带与脚，完成冬季夜空中最有辨识度的猎人。',
+        hazards: 12,
+        enemies: 2,
+        energy: 8,
+        timeBonus: 20,
+        stars: [
+          { x: 0.28, y: 0.22, label: 'Betelgeuse' },
+          { x: 0.70, y: 0.25, label: 'Bellatrix' },
+          { x: 0.62, y: 0.76, label: 'Rigel' },
+          { x: 0.30, y: 0.72, label: 'Saiph' },
+          { x: 0.42, y: 0.47, label: 'Alnitak' },
+          { x: 0.50, y: 0.50, label: 'Alnilam' },
+          { x: 0.58, y: 0.53, label: 'Mintaka' },
+          { x: 0.49, y: 0.64, label: 'M42' }
+        ],
+        path: [0, 1, 6, 5, 4, 3, 2, 6, 5, 7]
+      },
+      {
+        name: '射手座',
+        englishName: 'Sagittarius',
+        title: 'Teapot',
+        description: '画出银河旁的茶壶：壶身、壶嘴与壶柄都要连上。',
+        hazards: 11,
+        enemies: 2,
+        energy: 7,
+        timeBonus: 22,
+        stars: [
+          { x: 0.28, y: 0.70, label: 'Kaus Australis' },
+          { x: 0.28, y: 0.46, label: 'Kaus Media' },
+          { x: 0.38, y: 0.25, label: 'Kaus Borealis' },
+          { x: 0.62, y: 0.32, label: 'Phi Sgr' },
+          { x: 0.72, y: 0.50, label: 'Nunki' },
+          { x: 0.58, y: 0.72, label: 'Ascella' },
+          { x: 0.13, y: 0.42, label: 'Alnasl' },
+          { x: 0.85, y: 0.62, label: 'Tau Sgr' }
+        ],
+        path: [6, 1, 2, 3, 4, 7, 5, 0, 1, 4, 5]
+      }
+    ];
+
+    const state = {
+      mode: 'ready',
+      score: 0,
+      lives: 3,
+      timeLeft: 90,
+      connectedCount: 0,
+      levelIndex: 0,
+      targetIndex: 0,
+      best: Number(localStorage.getItem('pointlessPlayableBest') || 0),
+      targets: [],
+      energies: [],
+      hazards: [],
+      enemies: [],
+      links: [],
+      particles: [],
+      stars: [],
+      lastTime: 0,
+      toastTimer: 0,
+      levelFlash: 0,
+      player: {
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        radius: 11,
+        speed: 290,
+        invincibleUntil: 0,
+        dashCooldown: 0,
+        dashTime: 0,
+        dashAngle: 0
+      }
+    };
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      createStars();
+    }
+
+    function createStars() {
+      const count = Math.floor(Math.min(190, Math.max(90, window.innerWidth * window.innerHeight / 8500)));
+      state.stars = Array.from({ length: count }, () => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: Math.random() * 1.8 + 0.3,
+        speed: Math.random() * 0.18 + 0.04,
+        alpha: Math.random() * 0.55 + 0.18
+      }));
+    }
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function isTooClose(x, y, list, minDistance) {
+      return list.some((item) => Math.hypot(item.x - x, item.y - y) < minDistance);
+    }
+
+    function getPlayBounds() {
+      const compact = window.innerWidth < 640;
+      const paddingX = compact ? 34 : 120;
+      const top = compact ? 150 : 132;
+      const bottom = compact ? 178 : 142;
+      return {
+        x: paddingX,
+        y: top,
+        width: Math.max(260, window.innerWidth - paddingX * 2),
+        height: Math.max(230, window.innerHeight - top - bottom)
+      };
+    }
+
+    function mapConstellation(level) {
+      const bounds = getPlayBounds();
+      const xs = level.stars.map((star) => star.x);
+      const ys = level.stars.map((star) => star.y);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      const sourceWidth = Math.max(0.01, maxX - minX);
+      const sourceHeight = Math.max(0.01, maxY - minY);
+      const scale = Math.min(bounds.width / sourceWidth, bounds.height / sourceHeight);
+      const width = sourceWidth * scale;
+      const height = sourceHeight * scale;
+      const offsetX = bounds.x + (bounds.width - width) / 2;
+      const offsetY = bounds.y + (bounds.height - height) / 2;
+      return level.stars.map((star) => ({
+        x: offsetX + (star.x - minX) * scale,
+        y: offsetY + (star.y - minY) * scale,
+        label: star.label
+      }));
+    }
+
+    function distanceToSegment(point, a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lengthSq = dx * dx + dy * dy;
+      if (!lengthSq) return Math.hypot(point.x - a.x, point.y - a.y);
+      const t = clamp(((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSq, 0, 1);
+      const x = a.x + dx * t;
+      const y = a.y + dy * t;
+      return Math.hypot(point.x - x, point.y - y);
+    }
+
+    function getNearestPathDistance(position) {
+      let nearest = Infinity;
+      for (let i = 1; i < state.targets.length; i += 1) {
+        nearest = Math.min(nearest, distanceToSegment(position, state.targets[i - 1], state.targets[i]));
+      }
+      return nearest;
+    }
+
+    function isNearConstellationPath(position, distanceLimit = 58) {
+      return getNearestPathDistance(position) < distanceLimit;
+    }
+
+    function randomPosition(existing, minDistance = 95, options = {}) {
+      const bounds = getPlayBounds();
+      const avoidPath = Boolean(options.avoidPath);
+      const pathDistance = options.pathDistance || 58;
+      let bestPosition = null;
+      let bestScore = -Infinity;
+      for (let i = 0; i < 120; i += 1) {
+        const x = rand(bounds.x, bounds.x + bounds.width);
+        const y = rand(bounds.y, bounds.y + bounds.height);
+        const position = { x, y };
+        const nearestObject = existing.reduce((nearest, item) => Math.min(nearest, Math.hypot(item.x - x, item.y - y)), Infinity);
+        const nearestPath = avoidPath ? getNearestPathDistance(position) : pathDistance + 80;
+        const score = nearestObject + nearestPath * 0.85;
+        if (score > bestScore) {
+          bestScore = score;
+          bestPosition = position;
+        }
+        if (nearestObject < minDistance) continue;
+        if (avoidPath && nearestPath < pathDistance) continue;
+        return position;
+      }
+      return bestPosition || {
+        x: rand(bounds.x, bounds.x + bounds.width),
+        y: rand(bounds.y, bounds.y + bounds.height)
+      };
+    }
+
+    function createBurst(x, y, color, amount = 18, force = 1) {
+      for (let i = 0; i < amount; i += 1) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = rand(0.8, 4.4) * force;
+        state.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: rand(1.1, 3.7),
+          life: rand(0.45, 0.95),
+          maxLife: 1,
+          color
+        });
+      }
+    }
+
+    function resetGame() {
+      state.mode = 'playing';
+      state.score = 0;
+      state.lives = 3;
+      state.timeLeft = 90;
+      state.connectedCount = 0;
+      state.levelIndex = 0;
+      state.targetIndex = 0;
+      state.links = [];
+      state.particles = [];
+      state.toastTimer = 0;
+      state.levelFlash = 0;
+      const player = state.player;
+      player.x = window.innerWidth / 2;
+      player.y = window.innerHeight / 2;
+      player.vx = 0;
+      player.vy = 0;
+      player.invincibleUntil = performance.now() + 900;
+      player.dashCooldown = 0;
+      player.dashTime = 0;
+      loadLevel(0);
+      updateHud();
+      showToast('从第一颗星开始点亮星座');
+    }
+
+    function placePlayerForLevel(mappedStars, level) {
+      const firstStar = mappedStars[level.path[0]];
+      const bounds = getPlayBounds();
+      const center = {
+        x: bounds.x + bounds.width / 2,
+        y: bounds.y + bounds.height / 2
+      };
+      let dx = center.x - firstStar.x;
+      let dy = center.y - firstStar.y;
+      let len = Math.hypot(dx, dy);
+      if (len < 1) {
+        dx = 0;
+        dy = 1;
+        len = 1;
+      }
+      const player = state.player;
+      player.x = clamp(firstStar.x + dx / len * 92, 24, window.innerWidth - 24);
+      player.y = clamp(firstStar.y + dy / len * 92, 24, window.innerHeight - 24);
+      player.vx = 0;
+      player.vy = 0;
+      player.dashTime = 0;
+      player.dashCooldown = 0;
+      player.invincibleUntil = performance.now() + 900;
+      pointer.active = false;
+    }
+
+    function loadLevel(index) {
+      state.levelIndex = index;
+      state.targetIndex = 0;
+      state.targets = [];
+      state.energies = [];
+      state.hazards = [];
+      state.enemies = [];
+      state.links = [];
+      const level = levels[index];
+      const compactScale = window.innerWidth < 640 ? 0.65 : window.innerWidth < 900 ? 0.82 : 1;
+      const hazardCount = Math.max(3, Math.round(level.hazards * compactScale));
+      const enemyCount = Math.min(level.enemies, window.innerWidth < 640 ? 1 : level.enemies);
+      const energyCount = Math.max(5, Math.round(level.energy * (window.innerWidth < 640 ? 0.85 : 1)));
+      const mappedStars = mapConstellation(level);
+      placePlayerForLevel(mappedStars, level);
+      const occupied = [{ x: state.player.x, y: state.player.y }];
+      level.path.forEach((starIndex, orderIndex) => {
+        const star = mappedStars[starIndex];
+        const target = {
+          x: star.x,
+          y: star.y,
+          radius: 15,
+          order: orderIndex + 1,
+          starIndex,
+          label: star.label,
+          pulse: rand(0, Math.PI * 2),
+          done: false
+        };
+        occupied.push(target);
+        state.targets.push(target);
+      });
+      for (let i = 0; i < energyCount; i += 1) {
+        const position = randomPosition(occupied, 72);
+        occupied.push(position);
+        state.energies.push({ x: position.x, y: position.y, radius: 8, pulse: rand(0, Math.PI * 2) });
+      }
+      for (let i = 0; i < hazardCount; i += 1) {
+        const position = randomPosition(occupied, 76, { avoidPath: true, pathDistance: 62 });
+        occupied.push(position);
+        state.hazards.push({
+          x: position.x,
+          y: position.y,
+          radius: rand(14, 20),
+          pulse: rand(0, Math.PI * 2),
+          spin: rand(-1.2, 1.2),
+          type: 'hazard'
+        });
+      }
+      for (let i = 0; i < enemyCount; i += 1) {
+        const position = randomPosition(occupied, 130, { avoidPath: true, pathDistance: 70 });
+        occupied.push(position);
+        state.enemies.push({
+          x: position.x,
+          y: position.y,
+          vx: 0,
+          vy: 0,
+          radius: 13,
+          speed: 72 + index * 16 + i * 8,
+          pulse: rand(0, Math.PI * 2),
+          type: 'enemy'
+        });
+      }
+      objectiveText.textContent = `第 ${index + 1} 个星座：${level.name}（${level.title}）。${level.description}`;
+      state.levelFlash = 1;
+    }
+
+    function completeLevel() {
+      const level = levels[state.levelIndex];
+      const bonus = 450 + state.levelIndex * 250 + Math.ceil(state.timeLeft) * 3;
+      state.score += bonus;
+      state.timeLeft += level.timeBonus;
+      createBurst(state.player.x, state.player.y, colors.gold, 80, 1.8);
+      showToast(`${level.name} 点亮 +${bonus}`);
+      if (state.levelIndex >= levels.length - 1) {
+        endGame(true);
+        return;
+      }
+      state.player.invincibleUntil = performance.now() + 900;
+      loadLevel(state.levelIndex + 1);
+    }
+
+    function collectTarget(target, now) {
+      if (target.done) return;
+      const expected = state.targets[state.targetIndex];
+      if (target !== expected) {
+        showToast(`先连接 ${expected.label}`);
+        state.score = Math.max(0, state.score - 20);
+        createBurst(target.x, target.y, colors.red, 12, 0.7);
+        return;
+      }
+      target.done = true;
+      state.targetIndex += 1;
+      state.connectedCount += 1;
+      state.score += 110 + state.levelIndex * 25;
+      state.links.push({ x: target.x, y: target.y, time: now, level: state.levelIndex });
+      createBurst(target.x, target.y, colors.target, 36, 1.15);
+      if (state.targetIndex >= state.targets.length) {
+        completeLevel();
+      } else {
+        showToast(`点亮 ${target.label}，下一个：${state.targets[state.targetIndex].label}`);
+      }
+    }
+
+    function collectEnergy(energy) {
+      state.score += 35;
+      state.player.dashCooldown = Math.max(0, state.player.dashCooldown - 0.75);
+      createBurst(energy.x, energy.y, colors.energy, 18, 0.9);
+      showToast('能量 +35，冲刺冷却缩短');
+    }
+
+    function takeDamage(now, source) {
+      const player = state.player;
+      if (now < player.invincibleUntil || player.dashTime > 0) return;
+      state.lives -= 1;
+      player.invincibleUntil = now + 1300;
+      state.score = Math.max(0, state.score - 80);
+      createBurst(source.x, source.y, colors.red, 34, 1.2);
+      shell.classList.remove('shake');
+      void shell.offsetWidth;
+      shell.classList.add('shake');
+      const message = source.type === 'enemy' ? '追踪星点撞上你了，生命 -1' : '危险星点干扰了连线，生命 -1';
+      showToast(message);
+      if (state.lives <= 0) endGame(false);
+    }
+
+    function tryDash() {
+      const player = state.player;
+      if (state.mode !== 'playing' || player.dashCooldown > 0) return;
+      const angle = Math.atan2(player.vy, player.vx);
+      player.dashAngle = Math.abs(player.vx) + Math.abs(player.vy) > 0.01 ? angle : -Math.PI / 2;
+      player.dashTime = 0.18;
+      player.dashCooldown = 2.2;
+      player.invincibleUntil = performance.now() + 260;
+      createBurst(player.x, player.y, colors.player, 16, 0.9);
+    }
+
+    function updatePlayer(delta) {
+      const player = state.player;
+      let inputX = 0;
+      let inputY = 0;
+      if (keys.has('KeyA') || keys.has('ArrowLeft')) inputX -= 1;
+      if (keys.has('KeyD') || keys.has('ArrowRight')) inputX += 1;
+      if (keys.has('KeyW') || keys.has('ArrowUp')) inputY -= 1;
+      if (keys.has('KeyS') || keys.has('ArrowDown')) inputY += 1;
+      if (pointer.active) {
+        const dx = pointer.x - player.x;
+        const dy = pointer.y - player.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 8) {
+          inputX += dx / len;
+          inputY += dy / len;
+        }
+      }
+      const length = Math.hypot(inputX, inputY) || 1;
+      inputX /= length;
+      inputY /= length;
+      const dashSpeed = player.dashTime > 0 ? 760 : 0;
+      if (player.dashTime > 0) {
+        player.vx = Math.cos(player.dashAngle) * dashSpeed;
+        player.vy = Math.sin(player.dashAngle) * dashSpeed;
+        player.dashTime -= delta;
+      } else {
+        player.vx = inputX * player.speed;
+        player.vy = inputY * player.speed;
+      }
+      player.x = clamp(player.x + player.vx * delta, 18, window.innerWidth - 18);
+      player.y = clamp(player.y + player.vy * delta, 18, window.innerHeight - 18);
+      player.dashCooldown = Math.max(0, player.dashCooldown - delta);
+    }
+
+    function updateEnemies(delta) {
+      const player = state.player;
+      state.enemies.forEach((enemy) => {
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const avoidDash = player.dashTime > 0 ? -0.6 : 1;
+        enemy.vx += (dx / len) * enemy.speed * delta * 2.4 * avoidDash;
+        enemy.vy += (dy / len) * enemy.speed * delta * 2.4 * avoidDash;
+        const speed = Math.hypot(enemy.vx, enemy.vy);
+        const maxSpeed = enemy.speed;
+        if (speed > maxSpeed) {
+          enemy.vx = enemy.vx / speed * maxSpeed;
+          enemy.vy = enemy.vy / speed * maxSpeed;
+        }
+        enemy.x = clamp(enemy.x + enemy.vx * delta, 18, window.innerWidth - 18);
+        enemy.y = clamp(enemy.y + enemy.vy * delta, 18, window.innerHeight - 18);
+        enemy.vx *= 0.985;
+        enemy.vy *= 0.985;
+        enemy.pulse += delta * 4;
+      });
+    }
+
+    function updateCollisions(now) {
+      const player = state.player;
+      state.targets.forEach((target) => {
+        target.pulse += 0.045;
+        if (!target.done && distance(player, target) < player.radius + target.radius + 5) collectTarget(target, now);
+      });
+      state.energies = state.energies.filter((energy) => {
+        energy.pulse += 0.055;
+        if (distance(player, energy) < player.radius + energy.radius + 5) {
+          collectEnergy(energy);
+          return false;
+        }
+        return true;
+      });
+      state.hazards.forEach((hazard) => {
+        hazard.pulse += 0.045;
+        if (distance(player, hazard) < player.radius + hazard.radius + 3) takeDamage(now, hazard);
+      });
+      state.enemies.forEach((enemy) => {
+        if (distance(player, enemy) < player.radius + enemy.radius + 3) takeDamage(now, enemy);
+      });
+    }
+
+    function updateParticles(delta) {
+      state.particles = state.particles.filter((particle) => {
+        particle.x += particle.vx * delta * 60;
+        particle.y += particle.vy * delta * 60;
+        particle.vx *= 0.985;
+        particle.vy *= 0.985;
+        particle.life -= delta;
+        return particle.life > 0;
+      });
+    }
+
+    function update(delta, now) {
+      if (state.mode !== 'playing') return;
+      state.timeLeft -= delta;
+      if (state.timeLeft <= 0) {
+        state.timeLeft = 0;
+        endGame(false);
+        return;
+      }
+      updatePlayer(delta);
+      updateEnemies(delta);
+      updateCollisions(now);
+      updateParticles(delta);
+      if (state.toastTimer > 0) {
+        state.toastTimer -= delta;
+        if (state.toastTimer <= 0) toast.classList.remove('is-visible');
+      }
+      state.levelFlash = Math.max(0, state.levelFlash - delta);
+      updateHud();
+    }
+
+    function updateHud() {
+      const targetTotal = state.targets.length || levels[state.levelIndex].path.length;
+      scoreValue.textContent = state.score;
+      livesValue.textContent = '●'.repeat(Math.max(0, state.lives)) || '0';
+      timeValue.textContent = Math.max(0, Math.ceil(state.timeLeft));
+      levelValue.textContent = `${Math.min(state.levelIndex + 1, levels.length)}/${levels.length}`;
+      targetValue.textContent = `${Math.min(state.targetIndex, targetTotal)}/${targetTotal}`;
+      dashValue.textContent = state.player.dashCooldown <= 0 ? 'Ready' : state.player.dashCooldown.toFixed(1) + 's';
+    }
+
+    function drawGlowCircle(x, y, radius, color, alpha = 1) {
+      const safeAlpha = clamp(alpha, 0, 1);
+      const hexAlpha = Math.floor(safeAlpha * 190).toString(16).padStart(2, '0');
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius * 4.2);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(0.18, color + hexAlpha);
+      gradient.addColorStop(1, color + '00');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 4.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = safeAlpha;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawBackground(delta) {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      state.stars.forEach((star) => {
+        star.y += star.speed * delta * 22;
+        if (star.y > window.innerHeight + 5) {
+          star.y = -5;
+          star.x = Math.random() * window.innerWidth;
+        }
+        ctx.globalAlpha = star.alpha;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function drawTemplatePath() {
+      if (state.targets.length < 2) return;
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(139, 233, 253, 0.2)';
+      ctx.setLineDash([7, 10]);
+      ctx.beginPath();
+      state.targets.forEach((target, index) => {
+        if (index === 0) ctx.moveTo(target.x, target.y);
+        else ctx.lineTo(target.x, target.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    function drawPath() {
+      const completed = state.targets.filter((target) => target.done);
+      if (!completed.length) return;
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 24;
+      ctx.shadowColor = colors.target;
+      ctx.strokeStyle = 'rgba(80, 250, 123, 0.76)';
+      ctx.beginPath();
+      completed.forEach((target, index) => {
+        if (index === 0) ctx.moveTo(target.x, target.y);
+        else ctx.lineTo(target.x, target.y);
+      });
+      if (state.mode === 'playing') ctx.lineTo(state.player.x, state.player.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTargets() {
+      const expected = state.targets[state.targetIndex];
+      state.targets.forEach((target) => {
+        const active = target === expected;
+        const color = target.done ? colors.gold : active ? colors.target : '#37586b';
+        const alpha = target.done ? 0.85 : active ? 1 : 0.42;
+        const pulse = Math.sin(target.pulse) * 2.5;
+        drawGlowCircle(target.x, target.y, target.radius + pulse * 0.2, color, alpha);
+        ctx.save();
+        ctx.strokeStyle = active ? 'rgba(241, 250, 140, 0.88)' : 'rgba(139, 233, 253, 0.22)';
+        ctx.lineWidth = active ? 2.5 : 1.5;
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, target.radius + 13 + pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = target.done ? '#050510' : active ? '#06140b' : '#8a95aa';
+        ctx.font = '900 13px Trebuchet MS';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(target.order, target.x, target.y + 0.5);
+        ctx.restore();
+      });
+    }
+
+    function drawEnergies() {
+      state.energies.forEach((energy) => {
+        const pulse = Math.sin(energy.pulse) * 1.8;
+        drawGlowCircle(energy.x, energy.y, energy.radius + pulse * 0.2, colors.energy, 0.85);
+      });
+    }
+
+    function drawHazards(now) {
+      state.hazards.forEach((hazard) => {
+        const pulse = Math.sin(hazard.pulse) * 2.2;
+        ctx.save();
+        ctx.translate(hazard.x, hazard.y);
+        ctx.rotate(now / 900 * hazard.spin);
+        ctx.strokeStyle = 'rgba(255, 85, 85, 0.64)';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = colors.danger;
+        ctx.beginPath();
+        for (let i = 0; i < 4; i += 1) {
+          const angle = i * Math.PI / 2;
+          const x = Math.cos(angle) * (hazard.radius + 8 + pulse);
+          const y = Math.sin(angle) * (hazard.radius + 8 + pulse);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+        drawGlowCircle(hazard.x, hazard.y, hazard.radius * 0.55, colors.danger, 0.84);
+      });
+    }
+
+    function drawEnemies() {
+      state.enemies.forEach((enemy) => {
+        const pulse = Math.sin(enemy.pulse) * 2;
+        drawGlowCircle(enemy.x, enemy.y, enemy.radius + pulse * 0.2, colors.enemy, 0.9);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(189, 147, 249, 0.62)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y, enemy.radius + 10 + pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    function drawParticles() {
+      state.particles.forEach((particle) => {
+        const alpha = Math.max(0, particle.life / particle.maxLife);
+        ctx.globalAlpha = alpha;
+        drawGlowCircle(particle.x, particle.y, particle.radius, particle.color, alpha);
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function drawPlayer(now) {
+      const player = state.player;
+      const invincible = now < player.invincibleUntil || player.dashTime > 0;
+      const blink = invincible ? 0.55 + Math.sin(now / 65) * 0.26 : 1;
+      if (Math.abs(player.vx) + Math.abs(player.vy) > 1) {
+        ctx.save();
+        ctx.strokeStyle = player.dashTime > 0 ? 'rgba(241, 250, 140, 0.72)' : 'rgba(255, 255, 255, 0.18)';
+        ctx.lineWidth = player.dashTime > 0 ? 8 : 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(player.x - player.vx * 0.055, player.y - player.vy * 0.055);
+        ctx.lineTo(player.x - player.vx * 0.018, player.y - player.vy * 0.018);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawGlowCircle(player.x, player.y, player.radius + Math.sin(now / 120) * 1.4, colors.player, blink);
+      ctx.save();
+      ctx.strokeStyle = invincible ? 'rgba(241, 250, 140, 0.82)' : 'rgba(139, 233, 253, 0.42)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.radius + 13 + Math.sin(now / 150) * 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawLevelFlash() {
+      if (state.levelFlash <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = state.levelFlash * 0.16;
+      ctx.fillStyle = colors.gold;
+      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.restore();
+    }
+
+    function draw(delta, now) {
+      drawBackground(delta);
+      drawTemplatePath();
+      drawPath();
+      drawTargets();
+      drawEnergies();
+      drawHazards(now);
+      drawEnemies();
+      drawParticles();
+      drawPlayer(now);
+      drawLevelFlash();
+    }
+
+    function loop(now) {
+      const delta = Math.min(0.033, (now - state.lastTime) / 1000 || 0.016);
+      state.lastTime = now;
+      update(delta, now);
+      draw(delta, now);
+      requestAnimationFrame(loop);
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('is-visible');
+      state.toastTimer = 1.5;
+    }
+
+    function endGame(won) {
+      if (state.mode === 'ended') return;
+      state.mode = 'ended';
+      const completedLevels = won ? levels.length : state.levelIndex;
+      state.best = Math.max(state.best, state.score);
+      localStorage.setItem('pointlessPlayableBest', String(state.best));
+      finalScore.textContent = state.score;
+      finalLevel.textContent = `${completedLevels}/${levels.length}`;
+      finalConnected.textContent = state.connectedCount;
+      bestScore.textContent = state.best;
+      endKicker.textContent = won ? 'Constellation Complete' : 'Run Ended';
+      endTitle.textContent = won ? 'Meaning' : 'Again';
+      resultText.textContent = won
+        ? '你点亮了仙后座、北斗七星、天鹅座、猎户座和射手座：一个点最终重新描出了真实夜空。'
+        : state.connectedCount >= 12
+          ? '差一点就能点亮完整星图。你已经找到真实星座的连接节奏了。'
+          : '这次星图还不够稳定。下一局先看绿色编号和幽灵线，再用冲刺穿过危险。';
+      endOverlay.classList.remove('is-hidden');
+      updateHud();
+    }
+
+    function clearInput() {
+      keys.clear();
+      pointer.active = false;
+    }
+
+    function startGame() {
+      clearInput();
+      startOverlay.classList.add('is-hidden');
+      endOverlay.classList.add('is-hidden');
+      resetGame();
+    }
+
+    function setPointer(clientX, clientY, active) {
+      pointer.x = clientX;
+      pointer.y = clientY;
+      pointer.active = active;
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('blur', clearInput);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearInput();
+    });
+    window.addEventListener('keydown', (event) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
+        event.preventDefault();
+      }
+      if (event.code === 'Space') tryDash();
+      keys.add(event.code);
+    });
+    window.addEventListener('keyup', (event) => keys.delete(event.code));
+    window.addEventListener('mousedown', (event) => {
+      setPointer(event.clientX, event.clientY, true);
+      tryDash();
+    });
+    window.addEventListener('mousemove', (event) => {
+      if (pointer.active) setPointer(event.clientX, event.clientY, true);
+    });
+    window.addEventListener('mouseup', () => setPointer(pointer.x, pointer.y, false));
+    window.addEventListener('touchstart', (event) => {
+      const touch = event.touches[0];
+      if (touch) {
+        setPointer(touch.clientX, touch.clientY, true);
+        tryDash();
+      }
+    }, { passive: true });
+    window.addEventListener('touchmove', (event) => {
+      const touch = event.touches[0];
+      if (touch) setPointer(touch.clientX, touch.clientY, true);
+    }, { passive: true });
+    window.addEventListener('touchend', () => setPointer(pointer.x, pointer.y, false));
+
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+    backButton.addEventListener('click', () => {
+      clearInput();
+      state.mode = 'ready';
+      endOverlay.classList.add('is-hidden');
+      startOverlay.classList.remove('is-hidden');
+    });
+
+    resize();
+    state.player.x = window.innerWidth / 2;
+    state.player.y = window.innerHeight / 2;
+    bestScore.textContent = state.best;
+    updateHud();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
