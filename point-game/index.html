@@ -589,7 +589,7 @@
         </div>
         <div class="quote">你不是为了成为最大的点，而是为了照着真实星图找到正确的连接。</div>
         <div class="button-row">
-          <button class="restart-button" id="restartButton">重新开始</button>
+          <button class="restart-button" id="restartButton">重新开启本关</button>
           <button class="ghost-button" id="backButton">回到开场</button>
         </div>
       </div>
@@ -757,6 +757,8 @@
       lastTime: 0,
       toastTimer: 0,
       levelFlash: 0,
+      retryLevelIndex: 0,
+      retryReason: '',
       player: {
         x: 0,
         y: 0,
@@ -926,6 +928,8 @@
       state.particles = [];
       state.toastTimer = 0;
       state.levelFlash = 0;
+      state.retryLevelIndex = 0;
+      state.retryReason = '';
       const player = state.player;
       player.x = window.innerWidth / 2;
       player.y = window.innerHeight / 2;
@@ -1041,6 +1045,20 @@
       state.levelFlash = 1;
     }
 
+    function resetCurrentLevel() {
+      clearInput();
+      state.mode = 'playing';
+      state.lives = 1;
+      state.targetIndex = 0;
+      state.links = [];
+      state.particles = [];
+      state.toastTimer = 0;
+      state.levelFlash = 0;
+      loadLevel(state.retryLevelIndex || state.levelIndex || 0);
+      updateHud();
+      showToast('重新开启本关，从 1 号星点开始');
+    }
+
     function completeLevel() {
       const level = levels[state.levelIndex];
       const bonus = 450 + state.levelIndex * 250 + Math.ceil(state.timeLeft) * 3;
@@ -1056,13 +1074,20 @@
       loadLevel(state.levelIndex + 1);
     }
 
+    function failCurrentLevel(reason) {
+      if (state.mode === 'ended') return;
+      state.retryLevelIndex = state.levelIndex;
+      state.retryReason = reason;
+      clearInput();
+      endGame(false, reason);
+    }
+
     function collectTarget(target, now) {
       if (target.done) return;
       const expected = state.targets[state.targetIndex];
       if (target !== expected) {
-        showToast(`先连接 ${expected.label}`);
-        state.score = Math.max(0, state.score - 20);
-        createBurst(target.x, target.y, colors.red, 12, 0.7);
+        createBurst(target.x, target.y, colors.red, 26, 1);
+        failCurrentLevel(`顺序错了：要先碰 ${expected.label}，不能先碰 ${target.label}`);
         return;
       }
       target.done = true;
@@ -1095,12 +1120,11 @@
       shell.classList.remove('shake');
       void shell.offsetWidth;
       shell.classList.add('shake');
-      const message = source.type === 'enemy' ? '追踪星点撞上你了，点击重新开始再试一次' : '危险星点干扰了连线，点击重新开始再试一次';
+      const message = source.type === 'enemy' ? '追踪星点撞上你了，重新开启本关再试一次' : '危险星点干扰了连线，重新开启本关再试一次';
       showToast(message);
       if (state.lives <= 0) {
         state.lives = 0;
-        clearInput();
-        endGame(false);
+        failCurrentLevel(message);
       }
     }
 
@@ -1455,7 +1479,7 @@
       state.toastTimer = 1.5;
     }
 
-    function endGame(won) {
+    function endGame(won, reason = '') {
       if (state.mode === 'ended') return;
       state.mode = 'ended';
       const completedLevels = won ? levels.length : state.levelIndex;
@@ -1465,13 +1489,12 @@
       finalLevel.textContent = `${completedLevels}/${levels.length}`;
       finalConnected.textContent = state.connectedCount;
       bestScore.textContent = state.best;
-      endKicker.textContent = won ? 'Constellation Complete' : 'Run Failed';
+      endKicker.textContent = won ? 'Constellation Complete' : 'Level Retry';
       endTitle.textContent = won ? 'Meaning' : 'Try Again';
+      restartButton.textContent = won ? '重新开始' : '重新开启本关';
       resultText.textContent = won
         ? '你点亮了仙后座、北斗七星、天鹅座、猎户座和射手座：一个点最终重新描出了真实夜空。'
-        : state.connectedCount >= 12
-          ? '差一点就能点亮完整星图。你已经找到真实星座的连接节奏了。'
-          : '这次星图还不够稳定。下一局先看绿色编号和幽灵线，再用冲刺穿过危险。';
+        : `${reason || '这一关的连接失败了。'} 按正确顺序从 1 号星点重新开始本关。`;
       endOverlay.classList.remove('is-hidden');
       updateHud();
     }
@@ -1592,8 +1615,22 @@
       action();
     }
 
+    function retryFromOverlay() {
+      suppressInputUntil = performance.now() + 450;
+      clearInput();
+      hideOverlayInstantly(endOverlay);
+      hideOverlayInstantly(startOverlay);
+      if (state.retryReason) {
+        resetCurrentLevel();
+        state.retryReason = '';
+      } else {
+        startGame();
+      }
+      resetPlayerToCurrentLevel();
+    }
+
     startButton.addEventListener('click', (event) => handleMenuButton(event, startGame));
-    restartButton.addEventListener('click', (event) => handleMenuButton(event, startGame));
+    restartButton.addEventListener('click', (event) => handleMenuButton(event, retryFromOverlay));
     [startButton, restartButton, backButton].forEach((button) => {
       ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mouseup'].forEach((type) => {
         button.addEventListener(type, (event) => {
@@ -1604,6 +1641,7 @@
     backButton.addEventListener('click', (event) => handleMenuButton(event, () => {
       clearInput();
       state.mode = 'ready';
+      state.retryReason = '';
       hideOverlayInstantly(endOverlay);
       startOverlay.classList.remove('is-hidden');
     }));
