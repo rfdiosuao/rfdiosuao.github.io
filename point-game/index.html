@@ -730,7 +730,7 @@
     const state = {
       mode: 'ready',
       score: 0,
-      lives: 3,
+      lives: 1,
       timeLeft: 90,
       connectedCount: 0,
       levelIndex: 0,
@@ -902,7 +902,7 @@
     function resetGame() {
       state.mode = 'playing';
       state.score = 0;
-      state.lives = 3;
+      state.lives = 1;
       state.timeLeft = 90;
       state.connectedCount = 0;
       state.levelIndex = 0;
@@ -1070,9 +1070,13 @@
       shell.classList.remove('shake');
       void shell.offsetWidth;
       shell.classList.add('shake');
-      const message = source.type === 'enemy' ? '追踪星点撞上你了，生命 -1' : '危险星点干扰了连线，生命 -1';
+      const message = source.type === 'enemy' ? '追踪星点撞上你了，点击重新开始再试一次' : '危险星点干扰了连线，点击重新开始再试一次';
       showToast(message);
-      if (state.lives <= 0) endGame(false);
+      if (state.lives <= 0) {
+        state.lives = 0;
+        clearInput();
+        endGame(false);
+      }
     }
 
     function tryDash() {
